@@ -1,0 +1,44 @@
+server:
+  port: 8082
+  # 限制请求头大小，保护内存
+  max-http-header-size: 16KB
+  netty:
+    connection-timeout: 5000
+    # 限制 Netty 工作线程数，防止抢占过多 CPU 资源
+    worker-count: 4
+
+spring:
+  web:
+    resources:
+      static-locations: file:/home/vdb/simpleForward/web/
+  application:
+    name: simple-forward-gateway
+
+  cloud:
+    gateway:
+      default-filters:
+        - name: DedupeResponseHeader
+          args:
+            strategy: RETAIN_FIRST
+            name: Access-Control-Allow-Origin Access-Control-Allow-Credentials
+      globalcors:
+        add-to-simple-url-handler-mapping: true
+        cors-configurations:
+          '[/qianwen/**]':
+            allowedOrigins: "*"
+            allowedHeaders: "*"
+            allowedMethods: "*"
+
+      # 路由配置
+      routes:
+        - id: service2_route
+          # 目标地址
+          uri: http://127.0.0.1:13206/
+          predicates:
+            - Path=/qianwen/**
+          filters:
+            - StripPrefix=1
+  logging:
+    level:
+      org.springframework.web.cors: DEBUG
+      org.springframework.cloud.gateway: DEBUG
